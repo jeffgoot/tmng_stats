@@ -1,10 +1,20 @@
 # Speed Test: T-mobile Nokia Gateway
 ## Overview
-This tool is used to speed test an internet connection using the speedtest-cli API, and include the tower metrics from the T-mobile Nokia Gateway as part of the logged CSV output. It is assumed that the internet connection of the host device is through the T-mobile Nokia Gateway.
+This tool is used to speed test an internet connection using the [speedtest-cli API](https://github.com/sivel/speedtest-cli), and include the tower metrics from the T-mobile Nokia Gateway as part of the logged CSV output. It is assumed that the internet connection of the host device is through the T-mobile Nokia Gateway.
 
 The information is being used as part of an ongoing effort to improve our T-mobile Home Internet setup (antenna, direction, etc.)
 
+## Versions
+``ng_speedtest-cli`` is used and was tested only with Python 3.9.
+
 ## Usage
+Under the covers, the [speedtest-cli API](https://github.com/sivel/speedtest-cli) library is used in performing the speed test. However, this tool logs the throughput results and the tower metrics in a CSV file directly. It deviates from [speedtest-cli API](https://github.com/sivel/speedtest-cli), which outputs the results to ``stdout``.
+
+``ng_speedtest-cli.py`` can be executed without any parameters with assumptions on the URL of the of the T-mobile Nokia Gateway and on the location of the output file.
+```shell
+python ng_speedtest-cli.py 
+```
+The full description of the parameters and the default value of each parameter are described below.
 ```shell
 $ python ng_speedtest-cli.py -h
 usage: ng_speedtest-cli.py [-h] [-u ENDPOINT] [-f LOGFILE]
