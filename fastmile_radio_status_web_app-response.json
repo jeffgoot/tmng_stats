@@ -1,0 +1,94 @@
+{
+  "connection_status": [
+    {
+      "ConnectionStatus": 1
+    }
+  ],
+  "apn_cfg": [
+    {
+      "oid": 1,
+      "Enable": 1,
+      "APN": "fbb.home",
+      "X_ALU_COM_ServiceType": "TR069,INTERNET",
+      "X_ALU_COM_ConnectionState": 1,
+      "X_ALU_COM_IPAddressV4": "",
+      "X_ALU_COM_IPAddressV6": "2607:fb90:7587:9991:3832:64f2:d394:2375"
+    },
+    {
+      "oid": 2,
+      "Enable": 1,
+      "APN": "ims",
+      "X_ALU_COM_ServiceType": "VOICE",
+      "X_ALU_COM_ConnectionState": 0,
+      "X_ALU_COM_IPAddressV4": "",
+      "X_ALU_COM_IPAddressV6": ""
+    }
+  ],
+  "cellular_stats": [
+    {
+      "BytesReceived": 5873241574,
+      "BytesSent": 2299945612
+    }
+  ],
+  "ethernet_stats": [
+    {
+      "Enable": 1,
+      "Status": "Up",
+      "stat": {
+        "BytesSent": 4288648144,
+        "BytesReceived": 4288648144,
+        "PacketsSent": 4288648144,
+        "PacketsReceived": 4288648144
+      }
+    }
+  ],
+  "cell_CA_stats_cfg": [
+    {
+      "X_ALU_COM_DLCarrierAggregationNumberOfEntries": 2,
+      "X_ALU_COM_ULCarrierAggregationNumberOfEntries": 0,
+      "ca4GDL": {
+        "0": {
+          "PhysicalCellID": 323,
+          "ScellBand": "B2",
+          "ScellChannel": 750
+        },
+        "1": {
+          "PhysicalCellID": 20,
+          "ScellBand": "B4",
+          "ScellChannel": 2250
+        }
+      },
+      "ca4GUL": {
+      }
+    }
+  ],
+  "cell_5G_stats_cfg": [
+    {
+      "stat": {
+        "SNRCurrent": -32768,
+        "RSRPCurrent": -32768,
+        "RSRPStrengthIndexCurrent": 0,
+        "PhysicalCellID": "",
+        "RSRQCurrent": -32768,
+        "Downlink_NR_ARFCN": 4294967295,
+        "SignalStrengthLevel": 0,
+        "Band": ""
+      }
+    }
+  ],
+  "cell_LTE_stats_cfg": [
+    {
+      "stat": {
+        "RSSICurrent": -82,
+        "SNRCurrent": 3,
+        "RSRPCurrent": -108,
+        "RSRPStrengthIndexCurrent": 2,
+        "PhysicalCellID": "285",
+        "RSRQCurrent": -14,
+        "DownlinkEarfcn": 68661,
+        "SignalStrengthLevel": 0,
+        "Band": "B71"
+      }
+    }
+  ]
+}
