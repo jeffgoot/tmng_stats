@@ -7,6 +7,22 @@ The information is being used as part of an ongoing effort to improve our T-mobi
 ## Versions
 ``ng_speedtest-cli`` is used and was tested only with Python 3.9.
 
+## Installation
+1. Clone the repo.
+2. Create the virtual environment and install the requirements.
+    ```shell
+    cd ~
+    git clone https://github.com/jeffgoot/tmng_stats
+    cd ~/tmng_stats/
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install -r requirements.txt
+    ```
+3. To install the script as a cron job, use the following in your crontab file:
+    ```
+    5,20,35,50 * * * * cd ~/tmng_stats/ && source ~/tmng_stats/.venv/bin/activate && python ng_speedtest-cli.py -f ~/tmng_stats/speed_test_nokia_gateway.csv
+    ```
+
 ## Usage
 Under the covers, the [speedtest-cli API](https://github.com/sivel/speedtest-cli) library is used in performing the speed test. However, this tool logs the throughput results and the tower metrics in a CSV file directly. It deviates from [speedtest-cli API](https://github.com/sivel/speedtest-cli), which outputs the results to ``stdout``.
 
