@@ -2,14 +2,16 @@
 ## Overview
 This tool is used to speed test an internet connection using the [speedtest-cli API](https://github.com/sivel/speedtest-cli), and include the tower metrics from the T-mobile Nokia Gateway as part of the logged CSV output. It is assumed that the internet connection of the host device is through the T-mobile Nokia Gateway.
 
-The information is being used as part of an ongoing effort to improve our T-mobile Home Internet setup (antenna, direction, etc.)
+The information produced by this tool is being used solely as part of our ongoing effort to improve our T-mobile Home Internet setup (antenna, direction, etc.). Specifically, the  ``4g_ecgi`` and ``5g_ecgi`` values are being used to look up in [CellMapper.net](https://www.cellmapper.net/) the cell tower that the T-mobile Nokia Gateway is connected to. Combined with the download throughput, upload throughput, and other tower metrics, we are able to measure that impact of changes in our setup.  
+
+The current script runs on a Raspberry Pi 4 Model B with Raspberry Pi OS.
 
 ### Output Example
 ```shell
 timestamp,ping,download,upload,4g_rsrp,4g_rsrq,4g_rssi,4g_snr,4g_band,4g_cell_id,4g_ecgi,4g_enbid,5g_rsrp,5g_rsrq,5g_rssi,5g_snr,5g_band,5g_cell_id,5g_ecgi,5g_enbid
 2022-11-19 23:03:17 EST,50.64,14.06,2.92,-107,-14,-80,4,B71,61,310260225122877,879386,-32768,-32768,,-32768,,,,
 ```
-Using ``csvkit`` to display the row in json format:
+Using ``csvkit`` to display the row in JSON format:
 ```shell
 [
     {
@@ -57,13 +59,13 @@ Using ``csvkit`` to display the row in json format:
 3. To install the script as a cron job and run it every 15 minutes, use the following in your crontab file. 
    ```
    SHELL=/bin/bash
-   5,20,35,50 * * * * (cd ~/tmng_stats/ && source ~/tmng_stats/.venv/bin/activate && python ng_speedtest-cli.py -f ~/tmng_stats/speed_test_nokia_gateway.csv) >> /tmp/ng_speedtest-cli.cron.log 2>&1
+   5,20,35,50 * * * * (cd ~/tmng_stats/ && source ~/tmng_stats/.venv/bin/activate && python ng_speedtest-cli.py -f ~/tmng_stats/speed_test_nokia_gateway.csv -u youradminusername -p yourpassword) >> /tmp/ng_speedtest-cli.cron.log 2>&1
    ```
 
 ## Usage
 Under the covers, the [speedtest-cli API](https://github.com/sivel/speedtest-cli) library is used in performing the speed test. However, this tool logs the throughput results and the tower metrics in a CSV file directly. It deviates from [speedtest-cli API](https://github.com/sivel/speedtest-cli), which outputs the results to ``stdout``.
 
-``ng_speedtest-cli.py`` requires the T-mobile Nokia Gateway admin ``username`` and ``password``, but can make assumptions on the URL of the gateway and on the location of the output file. **Note that the password will show up in `ps`.** This will have to do for now. 
+``ng_speedtest-cli.py`` requires the T-mobile Nokia Gateway admin ``username`` and ``password``, but can make assumptions on the URL of the gateway and on the location of the output file. **Note that the password will show up in `ps`, so take the necessary precautions.** 
 ```shell
 python ng_speedtest-cli.py -u youradminusername -p yourpassword
 ```
