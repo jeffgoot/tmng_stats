@@ -1,5 +1,7 @@
 import requests
+from requests.exceptions import RequestException
 import speedtest
+import tzlocal
 import logging
 import datetime
 import csv
@@ -27,14 +29,38 @@ class SpeedTestNokiaGateway:
         'rssi',
         'snr',
         'band',
-        'cell_id'
+        'cell_id',
+        'ecgi',
+        'enbid'
     ]
 
     BASE_TOWER_METRICS: Dict[str, str] = {key: '' for key in BASE_TOWER_METRIC_NAMES}
 
-    def __init__(self, root_endpoint_url: str):
+    def __init__(self, root_endpoint_url: str, username: str, password: str):
         self.root_endpoint_url: str = root_endpoint_url
         self.radio_status_endpoint_url: str = self.root_endpoint_url + '/fastmile_radio_status_web_app.cgi'
+        self.login_url = self.root_endpoint_url + '/login_app.cgi'
+        self.cell_status_url = self.root_endpoint_url + '/cell_status_app.cgi'
+
+        self.username = username
+        self.password = password
+
+    def get_cell_status(self) -> Tuple[Dict[str, str], Dict[str, str]]:
+        with requests.session() as t_session:
+            # Log in to the trashcan.
+            login_response: requests.Response = t_session.post(self.login_url, data={
+                'name': self.username,
+                'pswd': self.password
+            })
+
+            # Wrong username and/or password?
+            if login_response.status_code != 200:
+                raise RequestException(login_response.text)
+
+            else:
+                # Let's get the data from the admin-only page.
+                return self._get_radio_status(t_session)
+                # No log out? We're relying on the trashcan to clean up the session.
 
     def perform_speed_test_with_tower_metrics(self) -> \
             Tuple[Optional[float], Optional[float], Optional[float], str, Dict[str, str], Dict[str, str]]:
@@ -43,7 +69,7 @@ class SpeedTestNokiaGateway:
         :return: the throughput stats and tower metrics.
         """
 
-        four_g_metrics, five_g_metrics = self.get_radio_status()
+        four_g_metrics, five_g_metrics = self.get_cell_status()
         ping_ms, download_mbps, upload_mbps, timestamp = self.perform_internet_speed_test()
 
         return ping_ms, download_mbps, upload_mbps, timestamp, four_g_metrics, five_g_metrics
@@ -63,10 +89,10 @@ class SpeedTestNokiaGateway:
 
         try:
             # TODO use UTC.
-            exec_timestamp: str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S %z')
+            exec_timestamp: str = datetime.datetime.now(tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S %Z')
 
             # Run speedtest: ping, download, upload.
-            transfer_agent: speedtest.Speedtest = speedtest.Speedtest()
+            transfer_agent: speedtest.Speedtest = speedtest.Speedtest(secure=True)
 
             best_server: Dict[str, Any] = transfer_agent.get_best_server()
             ping_ms = float(best_server['latency'])
@@ -82,7 +108,7 @@ class SpeedTestNokiaGateway:
 
         return ping_ms, download_mbps, upload_mbps, exec_timestamp
 
-    def get_radio_status(self) -> Tuple[Dict[str, str], Dict[str, str]]:
+    def _get_radio_status(self, t_session: requests.Session) -> Tuple[Dict[str, str], Dict[str, str]]:
         """
         Gets the tower metrics from the Nokia Gateway's RESTful API.
 
@@ -94,8 +120,8 @@ class SpeedTestNokiaGateway:
         response_json: Any = None
 
         try:
-            response: requests.Response = requests.get(
-                self.radio_status_endpoint_url, timeout=SpeedTestNokiaGateway.DEFAULT_HTTP_REQUEST_TIMEOUT)
+            response: requests.Response = t_session.get(
+                self.cell_status_url, timeout=SpeedTestNokiaGateway.DEFAULT_HTTP_REQUEST_TIMEOUT)
 
             response_json: Any = response.json()
 
@@ -119,25 +145,29 @@ class SpeedTestNokiaGateway:
         five_g_metrics: Dict[str, str] = SpeedTestNokiaGateway.BASE_TOWER_METRICS.copy()
 
         # Extract 4G data - bands, tower, rsrp, rsrq, rssi, sinr
-        if response_json and 'cell_LTE_stats_cfg' in response_json:
+        if response_json and 'cell_stat_lte' in response_json:
             four_g_metrics = {
-                'rsrp':     response_json['cell_LTE_stats_cfg'][0]['stat']['RSRPCurrent'],
-                'rsrq':     response_json['cell_LTE_stats_cfg'][0]['stat']['RSRQCurrent'],
-                'rssi':     response_json['cell_LTE_stats_cfg'][0]['stat']['RSSICurrent'],
-                'snr':      response_json['cell_LTE_stats_cfg'][0]['stat']['SNRCurrent'],
-                'band':     response_json['cell_LTE_stats_cfg'][0]['stat']['Band'],
-                'cell_id':  response_json['cell_LTE_stats_cfg'][0]['stat']['PhysicalCellID']
+                'rsrp':     str(response_json['cell_stat_lte'][0].get('RSRPCurrent', '')),
+                'rsrq':     str(response_json['cell_stat_lte'][0].get('RSRQCurrent', '')),
+                'rssi':     str(response_json['cell_stat_lte'][0].get('RSSICurrent', '')),
+                'snr':      str(response_json['cell_stat_lte'][0].get('SNRCurrent', '')),
+                'band':     str(response_json['cell_stat_lte'][0].get('Band', '')),
+                'cell_id':  str(response_json['cell_stat_lte'][0].get('Cellid', '')),
+                'ecgi':     str(response_json['cell_stat_lte'][0].get('ECGI', '')),
+                'enbid':    str(response_json['cell_stat_lte'][0].get('eNBID', ''))
             }
 
         # Extract 5G data - bands, tower, rsrp, rsrq, rssi, sinr
-        if response_json and 'cell_5G_stats_cfg' in response_json:
+        if response_json and 'cell_stat_5G' in response_json:
             five_g_metrics = {
-                'rsrp':     response_json['cell_5G_stats_cfg'][0]['stat']['RSRPCurrent'],
-                'rsrq':     response_json['cell_5G_stats_cfg'][0]['stat']['RSRQCurrent'],
-                'rssi':     response_json['cell_5G_stats_cfg'][0]['stat'].get('RSSICurrent', ''),
-                'snr':      response_json['cell_5G_stats_cfg'][0]['stat']['SNRCurrent'],
-                'band':     response_json['cell_5G_stats_cfg'][0]['stat']['Band'],
-                'cell_id':  response_json['cell_5G_stats_cfg'][0]['stat']['PhysicalCellID']
+                'rsrp':     str(response_json['cell_stat_5G'][0].get('RSRPCurrent', '')),
+                'rsrq':     str(response_json['cell_stat_5G'][0].get('RSRQCurrent', '')),
+                'rssi':     str(response_json['cell_stat_5G'][0].get('RSSICurrent', '')),
+                'snr':      str(response_json['cell_stat_5G'][0].get('SNRCurrent', '')),
+                'band':     str(response_json['cell_stat_5G'][0].get('Band', '')),
+                'cell_id':  str(response_json['cell_stat_5G'][0].get('Cellid', '')),
+                'ecgi':     str(response_json['cell_stat_5G'][0].get('ECGI', '')),
+                'enbid':    str(response_json['cell_stat_5G'][0].get('eNBID', ''))
             }
 
         return four_g_metrics, five_g_metrics

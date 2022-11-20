@@ -1,0 +1,46 @@
+{
+  "cell_stat_generic": [
+    {
+      "RoamingStatus": "Home",
+      "CurrentAccessTechnology": "LTE",
+      "X_ALU_COM_TAC": "31733",
+      "BytesSent": 529060965,
+      "BytesReceived": 2692667920,
+      "Status": "Valid",
+      "CpeAbnormalStatus": 0
+    }
+  ],
+  "cell_stat_lte": [
+    {
+      "RSRPThreshold": "-120#-101",
+      "CQI": "5",
+      "ECGI": "310260225122877",
+      "MCC": "310",
+      "MNC": "260",
+      "eNBID": "879386",
+      "Cellid": "61",
+      "SNRCurrent": 1,
+      "RSRPCurrent": -107,
+      "RSRQCurrent": -14,
+      "RSSICurrent": -82,
+      "Band": "B71",
+      "Bandwidth": "5M",
+      "RSRPStrengthIndexCurrent": 2,
+      "RSRPSignalLevelCode": 2,
+      "PLMNName": ""
+    }
+  ],
+  "cell_stat_5G": [
+    {
+      "RSRPThreshold": "-120#-101",
+      "SNRCurrent": -32768,
+      "RSRPCurrent": -32768,
+      "RSRQCurrent": -32768,
+      "Band": "",
+      "Bandwidth": "",
+      "RSRPStrengthIndexCurrent": 0,
+      "RSRPSignalLevelCode": 3,
+      "PLMNName": ""
+    }
+  ]
+}

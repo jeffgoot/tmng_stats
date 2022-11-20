@@ -3,7 +3,8 @@ import json
 import tempfile
 import datetime
 import logging
-from requests.exceptions import Timeout
+from requests import Session
+from requests.exceptions import Timeout, RequestException
 from unittest.mock import patch, MagicMock
 from speed_test_nokia_gateway import SpeedTestNokiaGateway, SpeedTestNokiaGatewayCsvWriter, requests
 
@@ -12,37 +13,70 @@ class TestTmobileNokiaGatewayAPI(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         self.endpoint_url = 'http://localhost:8080'
+        self.test_username = 'admin'
+        self.test_password = 'super_secure_password'
 
     def setUp(self) -> None:
-        self.test_agent = SpeedTestNokiaGateway(self.endpoint_url)
+        self.test_agent = SpeedTestNokiaGateway(
+            self.endpoint_url, self.test_username, self.test_password)
 
-    @patch('speed_test_nokia_gateway.requests')
-    def test_radio_status_success(self, mock_requests) -> None:
-        # Prepare the mocked json object to return to the caller.
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        with open('fastmile_radio_status_web_app-response.json', 'r') as json_file:
-            mock_response.json.return_value = json.load(json_file)
-            mock_requests.get.return_value = mock_response
+    @patch.object(Session, 'get')
+    @patch.object(Session, 'post')
+    def test_get_cell_status_success(self, mock_post, mock_get) -> None:
+        # log in
+        mock_post_response = MagicMock()
+        mock_post_response.status_code = 200
+        mock_post.return_value = mock_post_response
 
-            four_g_metrics, five_g_metrics = self.test_agent.get_radio_status()
+        # download
+        mock_get_response = MagicMock()
+        mock_get_response.status_code = 200
+        mock_get.return_value = mock_get_response
+
+        with open('cell_status_app-response.json', 'r') as json_file:
+            # Prepare the mocked json object to return to the caller.
+            mock_get_response.json.return_value = json.load(json_file)
+
+            four_g_metrics, five_g_metrics = self.test_agent.get_cell_status()
 
         # Assertions
-        mock_response.json.asset_called_once()
-        mock_response.get.asset_called_once()
+        mock_post.assert_called_once()
+        mock_get.assert_called_once()
+        mock_get_response.json.assert_called_once()
 
         self.assertEqual('B71', four_g_metrics['band'])
-        self.assertEqual('285', four_g_metrics['cell_id'])
+        self.assertEqual('61', four_g_metrics['cell_id'])
+        self.assertEqual('310260225122877', four_g_metrics['ecgi'])
 
         self.assertEqual('', five_g_metrics['band'])
         self.assertEqual('', five_g_metrics['cell_id'])
+        self.assertEqual('', five_g_metrics['ecgi'])
 
-    @patch.object(requests, 'get')
-    def test_radio_status_exception_happened(self, mock_get) -> None:
+    @patch.object(Session, 'post')
+    def test_cell_status_app_wrong_username_password(self, mock_post):
+        # log in
+        mock_post_response = MagicMock()
+        mock_post_response.status_code = 401
+        mock_post.return_value = mock_post_response
+
+        self.test_agent.username = 'i_am_admin'
+        self.test_agent.password = 'wrong password'
+
+        with self.assertRaises(RequestException):
+            self.test_agent.get_cell_status()
+
+    @patch.object(Session, 'get')
+    @patch.object(Session, 'post')
+    def test_get_cell_status_exception_happened(self, mock_post, mock_get) -> None:
+        # log in
+        mock_post_response = MagicMock()
+        mock_post_response.status_code = 200
+        mock_post.return_value = mock_post_response
+
         # Force a Timeout exception internally..
         mock_get.side_effect = Timeout
 
-        four_g_metrics, five_g_metrics = self.test_agent.get_radio_status()
+        four_g_metrics, five_g_metrics = self.test_agent.get_cell_status()
 
         # Assertions
         for metrics in [four_g_metrics, five_g_metrics]:
@@ -52,6 +86,8 @@ class TestTmobileNokiaGatewayAPI(unittest.TestCase):
             self.assertEqual('', metrics['rsrq'])
             self.assertEqual('', metrics['rssi'])
             self.assertEqual('', metrics['snr'])
+            self.assertEqual('', metrics['ecgi'])
+            self.assertEqual('', metrics['enbid'])
 
     @patch('speed_test_nokia_gateway.speedtest.Speedtest.upload')
     @patch('speed_test_nokia_gateway.speedtest.Speedtest.download')
@@ -89,7 +125,6 @@ class TestTmobileNokiaGatewayAPI(unittest.TestCase):
             logging.debug(tmp_file.name)
 
         # TODO add assertions.
-
 
 
 
