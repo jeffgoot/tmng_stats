@@ -170,6 +170,12 @@ class SpeedTestNokiaGateway:
                 'enbid':    str(response_json['cell_stat_5G'][0].get('eNBID', ''))
             }
 
+            if five_g_metrics['band'] != '':
+                # Using the 4G values for tower and cell identifiers.
+                five_g_metrics['cell_id'] = four_g_metrics['cell_id']
+                five_g_metrics['ecgi'] = four_g_metrics['ecgi']
+                five_g_metrics['enbid'] = four_g_metrics['enbid']
+
         return four_g_metrics, five_g_metrics
 
 

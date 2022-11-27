@@ -12,17 +12,48 @@ from speed_test_nokia_gateway import SpeedTestNokiaGateway, SpeedTestNokiaGatewa
 class TestTmobileNokiaGatewayAPI(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
-        self.endpoint_url = 'http://localhost:8080'
-        self.test_username = 'admin'
-        self.test_password = 'super_secure_password'
+        self.endpoint_url: str = 'http://localhost:8080'
+        self.test_username: str = 'admin'
+        self.test_password: str = 'super_secure_password'
 
     def setUp(self) -> None:
-        self.test_agent = SpeedTestNokiaGateway(
+        self.test_agent: SpeedTestNokiaGateway = SpeedTestNokiaGateway(
             self.endpoint_url, self.test_username, self.test_password)
 
     @patch.object(Session, 'get')
     @patch.object(Session, 'post')
     def test_get_cell_status_success(self, mock_post, mock_get) -> None:
+        five_g_metrics, four_g_metrics = \
+            self._run_get_cell_status(mock_get, mock_post, 'cell_status_app-response.json')
+
+        self.assertEqual('B71', four_g_metrics['band'])
+        self.assertEqual('61', four_g_metrics['cell_id'])
+        self.assertEqual('879386', four_g_metrics['enbid'])
+        self.assertEqual('310260225122877', four_g_metrics['ecgi'])
+
+        self.assertEqual('', five_g_metrics['band'])
+        self.assertEqual('', five_g_metrics['cell_id'])
+        self.assertEqual('', five_g_metrics['enbid'])
+        self.assertEqual('', five_g_metrics['ecgi'])
+
+    @patch.object(Session, 'get')
+    @patch.object(Session, 'post')
+    def test_get_cell_status_success_with_5g(self, mock_post: MagicMock, mock_get: MagicMock) -> None:
+        five_g_metrics, four_g_metrics = \
+            self._run_get_cell_status(mock_get, mock_post, 'cell_status_app-response-with-5g.json')
+
+        # Additional assertions.
+        self.assertEqual('B2', four_g_metrics['band'])
+        self.assertEqual('11', four_g_metrics['cell_id'])
+        self.assertEqual('879386', four_g_metrics['enbid'])
+        self.assertEqual('310260225122827', four_g_metrics['ecgi'])
+
+        self.assertEqual('n71', five_g_metrics['band'])
+        self.assertEqual('11', five_g_metrics['cell_id'])
+        self.assertEqual('879386', four_g_metrics['enbid'])
+        self.assertEqual('310260225122827', five_g_metrics['ecgi'])
+
+    def _run_get_cell_status(self, mock_get: MagicMock, mock_post: MagicMock, return_data: str):
         # log in
         mock_post_response = MagicMock()
         mock_post_response.status_code = 200
@@ -33,7 +64,7 @@ class TestTmobileNokiaGatewayAPI(unittest.TestCase):
         mock_get_response.status_code = 200
         mock_get.return_value = mock_get_response
 
-        with open('cell_status_app-response.json', 'r') as json_file:
+        with open(return_data, 'r') as json_file:
             # Prepare the mocked json object to return to the caller.
             mock_get_response.json.return_value = json.load(json_file)
 
@@ -44,16 +75,10 @@ class TestTmobileNokiaGatewayAPI(unittest.TestCase):
         mock_get.assert_called_once()
         mock_get_response.json.assert_called_once()
 
-        self.assertEqual('B71', four_g_metrics['band'])
-        self.assertEqual('61', four_g_metrics['cell_id'])
-        self.assertEqual('310260225122877', four_g_metrics['ecgi'])
-
-        self.assertEqual('', five_g_metrics['band'])
-        self.assertEqual('', five_g_metrics['cell_id'])
-        self.assertEqual('', five_g_metrics['ecgi'])
+        return five_g_metrics, four_g_metrics
 
     @patch.object(Session, 'post')
-    def test_cell_status_app_wrong_username_password(self, mock_post):
+    def test_cell_status_app_wrong_username_password(self, mock_post: MagicMock):
         # log in
         mock_post_response = MagicMock()
         mock_post_response.status_code = 401
@@ -67,7 +92,7 @@ class TestTmobileNokiaGatewayAPI(unittest.TestCase):
 
     @patch.object(Session, 'get')
     @patch.object(Session, 'post')
-    def test_get_cell_status_exception_happened(self, mock_post, mock_get) -> None:
+    def test_get_cell_status_exception_happened(self, mock_post: MagicMock, mock_get: MagicMock) -> None:
         # log in
         mock_post_response = MagicMock()
         mock_post_response.status_code = 200
@@ -92,7 +117,8 @@ class TestTmobileNokiaGatewayAPI(unittest.TestCase):
     @patch('speed_test_nokia_gateway.speedtest.Speedtest.upload')
     @patch('speed_test_nokia_gateway.speedtest.Speedtest.download')
     @patch('speed_test_nokia_gateway.speedtest.Speedtest.get_best_server')
-    def test_speed_test_success(self, mock_speedtest_get_best_server, mock_speedtest_download, mock_speedtest_upload):
+    def test_speed_test_success(self, mock_speedtest_get_best_server: MagicMock, mock_speedtest_download: MagicMock,
+                                mock_speedtest_upload: MagicMock):
         mock_speedtest_get_best_server.return_value = {'latency': 12.0}
         mock_speedtest_download.return_value = 8.0 * 1000000
         mock_speedtest_upload.return_value = 1.9 * 1000000
